@@ -1,0 +1,3 @@
+h1. Login Alarm Module
+
+Optionally sends notifications to users at their account's email address on successful login or on failed login attempts. This can alert the user to unexpected login activity on their accounts and allow them to notify the system manager if they so wish.

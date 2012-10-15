@@ -1,0 +1,219 @@
+<?php
+
+/**
+ * ProcessWire Session Login Alarm Module
+ *
+ * Handles sending of login attempt/success emails to users and/or administrators.
+ * 
+ * For ProcessWire 2.x Copyright (C) 2012 by Ryan Cramer 
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * 
+ * http://www.processwire.com
+ * http://www.ryancramer.com
+ */
+
+class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
+{
+	const FAIL_ALERT_NEVER     = 0;
+	const FAIL_ALERT_USER      = 1;
+	const FAIL_ALERT_ALWAYS    = 2;
+
+	const SUCCESS_ALERT_NEVER  = 0;
+	const SUCCESS_ALERT_USER   = 1;
+	const SUCCESS_ALERT_ALWAYS = 2;
+
+	public static function getModuleInfo() 
+	{
+		return array(
+			'title'     => 'Session Login Alarm', 
+			'version'   => 001, 
+			'summary'   => 'Handles sending of login attempt/success emails to users and/or administrators.',
+			'permanent' => false, 
+			'singular'  => true, 
+			'autoload'  => true, 
+			'author'    => 'Netcarver',
+			'priority'  => 99,
+			);
+	}
+
+
+
+	/**
+	 * Initialize the hooks
+	 */
+	public function init()
+	{
+		$this->session->addHookAfter('login', $this, 'loginHook'); 
+	}
+
+
+
+	/**
+	 * Post login hook
+	 */
+	public function loginHook($event) {
+		$user = $event->return; 
+		if(!$user) {
+
+			// Determine if a valid username was used => failed on password => miss-typed or hack attempt?
+			$name = strtolower($event->arguments[0]);
+			$user = $this->users->get($name);
+			if ($user->id && '' != $user->email) {
+				// send a failed-login attempt email to stored email address of this user (if any)
+			}
+
+			// Should we log failed login attempts?
+	
+			return;
+		}
+
+		// Send login notification email...
+		if($this->notifyEmail) $this->notifySuccessEmail($user);
+
+		// Save this login in the login log!
+		/* if($this->logEntry) $this->saveLog($user); */
+	}
+
+
+
+	/**
+	 * Send notification email
+	 */
+	protected function notifyEmail(User $user) {
+		$subject = $this->parseTags($this->notifySubject, $user); 
+		$body = $this->parseTags($this->notifyBody, $user);
+		@mail($this->notifyEmail, $subject, $body, "From:{$this->notifyEmail}"); 
+	}
+
+
+
+	/**
+	 * Save log entry
+	 * By Ryan Cramer.
+	 */
+	/* protected function saveLog(User $user) { */
+	/* 	$log = new FileLog($this->config->paths->logs, get_class($this)); */
+	/* 	$log->save($this->parseTags($this->logEntry, $user)); */
+	/* } */
+
+
+
+	/**
+	 * Parse {tags} from $user and $_SERVER
+	 */
+	protected function parseTags($str, User $user, $urlencode = false) {
+
+		if(strpos($str, '{') === false) return $str; 
+		if(!preg_match_all('/\{([-_a-z0-9]+)\}/i', $str, $matches)) return $str; 
+
+		foreach($matches[1] as $key => $tag) {
+
+			if($tag == 'datetime') {
+				$value = date($this->config->dateFormat); 
+
+			} else if(isset($_SERVER[$tag])) {
+				$value = $this->sanitizer->text($_SERVER[$tag]); 
+
+			} else {
+				$value = (string) $user->get($tag);
+			}
+
+			if($urlencode) $value = urlencode($value);
+			$str = str_replace($matches[0][$key], $value, $str); 	
+		}
+
+		return $str; 
+	}
+
+
+	/**
+	 * Default settings used by this module
+	 */
+	static protected $defaultSettings = array(
+		'notifyEmail' => '',
+		'notifySubject' => '{HTTP_HOST} login: {name}',
+		'notifyBody' => "User: {name}\nURL: {HTTP_HOST}{REQUEST_URI}\nAgent: {HTTP_USER_AGENT}", 
+		'logEntry' => '{name} {REMOTE_ADDR}',
+		);
+
+
+
+	/**
+	 * Build a form allowing configuration of this Module
+	 */
+	static public function getModuleConfigInputfields(array $data) {
+
+		$fields = new InputfieldWrapper();
+		$m = wire('modules');
+
+		$f = $m->get("InputfieldMarkup"); 
+		$f->label = "Login Notifier Configuration Notes";
+		$f->value = 
+			"<p>You may specify any user field in the email subject, body or log entry by entering " . 
+			"it like this: {name} - which would be the user's login name, as an example. You may also specify " . 
+			"any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>";
+		$fields->add($f);
+	
+		// Send failed attempt emails?
+		$f = $m->get('InputfieldRadios'); 
+		$f->attr('name', 'sla_fail_alert'); 
+		$f->label = __('Alert user on failed login attempts?', __FILE__);
+		$f->addOption(self::FAIL_ALERT_NEVER, __('Never', __FILE__)); 
+		$f->addOption(self::FAIL_ALERT_USER, __('Only if a user chooses in their account', __FILE__)); 
+		$f->addOption(self::FAIL_ALERT_ALWAYS, __('Always', __FILE__)); 
+		$f->attr('value', (isset($data['sla_fail_alert']) ? (int) $data['sla_fail_alert'] : self::FAIL_ALERT_NEVER)); 
+		$fields->add($f);
+
+		// Fail email subject
+		$f = $m->get("InputfieldText"); 
+		$f->attr('name', 'sla_fail_subject'); 
+		$f->attr('value', $data['sla_fail_subject']); 
+		$f->label = "Failed attempt email subject";
+		$f->attr('value', (isset($data['sla_fail_subject']) ? $data['sla_fail_subject'] : "Failed Login Attempt Notification")); 
+		$fields->add($f); 
+
+		// Fail email body...
+		$f = $m->get("InputfieldTextarea"); 
+		$f->attr('name', 'sla_fail_body'); 
+		$f->attr('value', $data['sla_fail_body']);
+		$f->label = "Failed attempt email body";
+		$f->description = "You may include any user fields in the email by entering the field like this: {name}. " . $description; 
+		$fields->add($f);
+
+		// Send success emails?
+		$f = $m->get('InputfieldRadios'); 
+		$f->attr('name', 'sla_success_alert'); 
+		$f->label = __('Alert user on successful login?', __FILE__);
+		$f->addOption(self::SUCCESS_ALERT_NEVER, __('Never', __FILE__)); 
+		$f->addOption(self::SUCCESS_ALERT_USER, __('Only if a user chooses in their account', __FILE__)); 
+		$f->addOption(self::SUCCESS_ALERT_ALWAYS, __('Always', __FILE__)); 
+		$f->attr('value', (isset($data['sla_success_alert']) ? (int) $data['sla_success_alert'] : self::SUCCESS_ALERT_NEVER)); 
+		$fields->add($f);
+
+		// Success email subject
+		$f = $m->get("InputfieldText"); 
+		$f->attr('name', 'sla_success_subject'); 
+		$f->attr('value', $data['sla_success_subject']); 
+		$f->label = "Successful login email subject";
+		$f->attr('value', (isset($data['sla_success_subject']) ? $data['sla_success_subject'] : "Successful Login Notification")); 
+		$fields->add($f); 
+
+		// Success email body...
+		$f = $m->get("InputfieldTextarea"); 
+		$f->attr('name', 'sla_success_body'); 
+		$f->attr('value', $data['sla_success_body']);
+		$f->label = "Successful login email body";
+		$f->description = "You may include any user fields in the email by entering the field like this: {name}. " . $description; 
+		$fields->add($f);
+
+		/* // Logging target. */
+		/* $f = $m->get("InputfieldText"); */ 
+		/* $f->attr('name', 'logEntry'); */ 
+		/* $f->attr('value', $data['logEntry']); */ 
+		/* $f->label = "Log entry in " . wire('config')->paths->logs . "LoginNotifier.txt"; */
+		/* $fields->add($f); */
+
+		return $fields; 
+	}
+}
+
