@@ -66,11 +66,12 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 				'label'     => __("Send login notifications to user?", __FILE__),
 				'addtotemp' => array( 'user' ),
 			),
-			/* 'ppp_login_lastsent' => array( */
-			/* 	'type'      => 'FieldtypeText', */
-			/* 	'label'     => __("Time the last PPP token reminder was sent", __FILE__), */
-			/* 	'set'       => array( 'collapsed' => Inputfield::collapsedHidden, ), */
-			/* 	'addtotemp' => array( 'user' ), */
+			'sla_fail_lastsent' => array(
+				'type'      => 'FieldtypeText',
+				'label'     => __("Time the last failed attempt notification was sent", __FILE__),
+				'set'       => array( 'collapsed' => Inputfield::collapsedHidden, ),
+				'addtotemp' => array( 'user' ),
+			),
 		);
 	}
 
