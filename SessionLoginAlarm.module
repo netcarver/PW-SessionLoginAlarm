@@ -243,6 +243,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 
 	/**
 	 * Parse {tags} from $user and $_SERVER
+	 * Verbatim from Ryan Cramer's Login Notify module
 	 */
 	protected function parseTags($str, User $user, $urlencode = false) {
 
