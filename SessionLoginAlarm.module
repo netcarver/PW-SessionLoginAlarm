@@ -5,7 +5,7 @@
  *
  * Handles sending of login attempt/success emails to users.
  *
- * NB. This is *not* the same as Ryan Cramer's SessionLoginNotifier 
+ * NB. This is *not* the same as Ryan Cramer's Login Notifier 
  * module which mainly serves to notify an administrator of successful 
  * logins. This module exists to notify the users that their account
  * has been accessed -- either successfully or unsuccessfully -- and
@@ -15,6 +15,11 @@
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  * 
  * http://www.processwire.com
+ *
+ * TODO module priority
+ * TODO headers for mail routine
+ * TODO add a log of successful + failed attempt logins
+ * TODO throttle rate of sending failed attempt notifications
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
@@ -26,6 +31,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	const SUCCESS_ALERT_NEVER  = 0;
 	const SUCCESS_ALERT_USER   = 1;
 	const SUCCESS_ALERT_ALWAYS = 2;
+
 
 	public static function getModuleInfo() 
 	{
