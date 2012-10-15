@@ -20,6 +20,7 @@
  * TODO headers for mail routine
  * TODO add a log of successful + failed attempt logins
  * TODO throttle rate of sending failed attempt notifications
+ * TODO add remaining string localisations
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
