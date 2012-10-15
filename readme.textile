@@ -1,3 +1,16 @@
 h1. Login Alarm Module
 
 Optionally sends notifications to users at their account's email address on successful login or on failed login attempts. This can alert the user to unexpected login activity on their accounts and allow them to notify the system manager if they so wish.
+
+h2. Installation
+
+# Copy the entire SessionLoginAlarm/ directory into your site/modules/ directory.
+# Login to the admin interface of your site
+# Go to the modules page
+# Hit the "Check for new modules" button
+# Navigate to the SessionLoginAlarm entry and hit the "Install" button
+# Proceed to customise the options as needed
+
+h2. License
+
+GPL v2
