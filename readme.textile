@@ -4,7 +4,7 @@ Optionally sends notifications to users at their account's email address on succ
 
 h2. Installation
 
-# Copy the entire SessionLoginAlarm/ directory into your site/modules/ directory.
+# Copy the SessionLoginAlarm.module file into your site/modules/ directory.
 # Login to the admin interface of your site
 # Go to the modules page
 # Hit the "Check for new modules" button
