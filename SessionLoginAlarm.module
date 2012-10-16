@@ -232,8 +232,16 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 
 		$subject = $this->parseTags($subject, $user); 
 		$body    = $this->parseTags($body, $user);
+		$www     = $this->config->httpHost;
 
-		@mail($email, $subject, $body, "From:{$email}"); 
+		$headers[] = "From: " . __("Login Alarm", __FILE__) . " <login_alarm@$www>";
+		$headers[] = "MIME-Version: 1.0";
+		$headers[] = "Content-type: text/plain; charset=UTF-8";
+		$headers[] = "Reply-To: login_alarm_blackhole@".$www;
+		//$headers[] = 'X-Mailer: PHP/' . phpversion();
+
+		$sent = @mail($email, $subject, $body, implode("\n",$headers));
+		return $sent;
 	}
 
 
