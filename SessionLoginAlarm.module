@@ -15,7 +15,6 @@
  * http://www.processwire.com
  * Licensed under GNU/GPL v2,  
  *
- * TODO add a log of successful + failed attempt logins
  * TODO conform correct module priority
  */
 
@@ -201,38 +200,36 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 			$user = $this->users->get($name);
 			if ($user->id) {
 				// send a failed-login attempt email to stored email address of this user (if any)
-				if (
-					 self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || 
-					(self::FAIL_ALERT_USER   == $this->sla_fail_alert && $user->sla_notify_fail)
-				) {
-					$now      = time();
-					$lastsent = $user->sla_fail_lastsent;
-					$diff     = (int)$now - (int)$lastsent;
-					$timeout  = $diff > 60;
-					if( !$lastsent || $timeout ) {
-						$sent = $this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
-						if( $sent ) {
-							$user->set('sla_fail_lastsent', $now );
-							$user->save();
-						}
-					}
-					else
-						echo "Not sending email [", var_export( $diff, true), "]";
+				$now      = time();
+				$lastsent = $user->sla_fail_lastsent;
+				$diff     = (int)$now - (int)$lastsent;
+				$timeout  = $diff > 60;
+
+				if( !$lastsent || $timeout ) {
+
+					// Log the failed attempt...
+					self::saveLog($user);
+
+					// Send an email if configured to do so...
+					if (self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || (self::FAIL_ALERT_USER == $this->sla_fail_alert && $user->sla_notify_fail))
+						$this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
+
+					// Record the time we logged/sent the notification...	
+					$user->set('sla_fail_lastsent', $now );
+					$user->save();
 				}
 			}
 		}
 		else {
 			// Send login notification email?
-			if (
-				 self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || 
-				(self::SUCCESS_ALERT_USER   == $this->sla_success_alert && $user->sla_notify_success)
-			) {
+			if (self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || (self::SUCCESS_ALERT_USER == $this->sla_success_alert && $user->sla_notify_success)) {
 				$sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
 				if( $sent ) {
 					$user->set('sla_fail_lastsent', '' );
 					$user->save();
 				}
 			}
+			self::saveLog($user, "SUCCESS");
 		}
 	}
 
@@ -257,6 +254,16 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$headers[] = "Reply-To: login_alarm_blackhole@".$www;
 
 		return @mail($email, $subject, $body, implode("\n",$headers));
+	}
+
+
+
+	/**
+	 * Save log entry
+	 */
+	protected function saveLog(User $user, $prefix = "FAILURE") {
+		$log = new FileLog($this->config->paths->logs, get_class($this));
+		$log->save($this->parseTags($prefix . " " . $this->sla_log_entry, $user));
 	}
 
 
@@ -301,6 +308,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		'sla_success_alert'   => self::FAIL_ALERT_NEVER,
 		'sla_success_subject' => '{HTTP_HOST} Successful login: {name}',
 		'sla_success_body'    => "Date: {datetime}\nUser: {name}\nURL: {HTTP_HOST}{REQUEST_URI}\nAgent: {HTTP_USER_AGENT}", 
+		'sla_log_entry'       => '{name} {REMOTE_ADDR}',
 	);
 
 
@@ -374,12 +382,12 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f->description = __("You may include any user fields in the email by entering the field like this: {name}.", __FILE__);
 		$fields->add($f);
 
-		/* // Logging target. */
-		/* $f = $m->get("InputfieldText"); */ 
-		/* $f->attr('name', 'logEntry'); */ 
-		/* $f->attr('value', $data['logEntry']); */ 
-		/* $f->label = "Log entry in " . wire('config')->paths->logs . "LoginNotifier.txt"; */
-		/* $fields->add($f); */
+		// Logging target.
+		$f = $m->get("InputfieldText");
+		$f->attr('name', 'sla_log_entry');
+		$f->attr('value', $data['sla_log_entry']);
+		$f->label = "Logging to " . wire('config')->paths->logs . get_class($this) . ".txt";
+		$fields->add($f);
 
 		return $fields; 
 	}
