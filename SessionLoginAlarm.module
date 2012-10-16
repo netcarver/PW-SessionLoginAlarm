@@ -188,7 +188,6 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	 */
 	public function loginHook($event)
 	{
-//die( __CLASS__ );
 		$name = strtolower($event->arguments[0]);
 		if( 'guest' === $name )
 			return;
