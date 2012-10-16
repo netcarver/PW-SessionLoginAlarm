@@ -12,15 +12,13 @@
  * is meant mainly for higher value service sites.
  * 
  * For ProcessWire 2.x Copyright (C) 2012 by Ryan Cramer 
- * Licensed under GNU/GPL v2, see LICENSE.TXT
- * 
  * http://www.processwire.com
+ * Licensed under GNU/GPL v2,  
  *
  * TODO module priority
  * TODO headers for mail routine
  * TODO add a log of successful + failed attempt logins
  * TODO throttle rate of sending failed attempt notifications
- * TODO add remaining string localisations
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
@@ -179,10 +177,10 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	{
 		$fields = $event->object->get('profileFields');
 
-		if( self::FAIL_ALERT_USER == $this->sla_fail_alert /* || NULL == $this->sla_fail_alert */ )
+		if( self::FAIL_ALERT_USER == $this->sla_fail_alert )
 			$fields[] = "sla_notify_fail";
 
-		if( self::SUCCESS_ALERT_USER == $this->sla_success_alert /* || NULL == $this->sla_success_alert */ )
+		if( self::SUCCESS_ALERT_USER == $this->sla_success_alert )
 			$fields[] = "sla_notify_success";
 
 		$event->object->set('profileFields', $fields );
@@ -295,11 +293,11 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$m      = wire('modules');
 
 		$f = $m->get("InputfieldMarkup"); 
-		$f->label = "Login Notifier Configuration Notes";
-		$f->value = 
+		$f->label = __("Login Notifier Configuration Notes", __FILE__);
+		$f->value = __(
 			"<p>You may specify any user field in the email subject, body or log entry by entering " . 
 			"it like this: {name} - which would be the user's login name, as an example. You may also specify " . 
-			"any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>";
+			"any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>", __FILE__);
 		$fields->add($f);
 
 		// Send failed attempt emails?
@@ -316,7 +314,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f = $m->get("InputfieldText"); 
 		$f->attr('name', 'sla_fail_subject'); 
 		$f->attr('value', $data['sla_fail_subject']); 
-		$f->label = "Failed attempt email subject";
+		$f->label = __("Failed attempt email subject", __FILE__);
 		$f->attr('value', $data['sla_fail_subject']); 
 		$fields->add($f); 
 
@@ -324,8 +322,8 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f = $m->get("InputfieldTextarea"); 
 		$f->attr('name', 'sla_fail_body'); 
 		$f->attr('value', $data['sla_fail_body']);
-		$f->label = "Failed attempt email body";
-		$f->description = "You may include any user fields in the email by entering the field like this: {name}. " . $description; 
+		$f->label = __("Failed attempt email body", __FILE__);
+		$f->description = __("You may include any user fields in the email by entering the field like this: {name}. ", __FILE__); 
 		$fields->add($f);
 
 		// Send success emails?
@@ -342,7 +340,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f = $m->get("InputfieldText"); 
 		$f->attr('name', 'sla_success_subject'); 
 		$f->attr('value', $data['sla_success_subject']); 
-		$f->label = "Successful login email subject";
+		$f->label = __("Successful login email subject", __FILE__);
 		$f->attr('value', $data['sla_success_subject']); 
 		$fields->add($f); 
 
@@ -350,8 +348,8 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f = $m->get("InputfieldTextarea"); 
 		$f->attr('name', 'sla_success_body'); 
 		$f->attr('value', $data['sla_success_body']);
-		$f->label = "Successful login email body";
-		$f->description = "You may include any user fields in the email by entering the field like this: {name}. " . $description; 
+		$f->label = __("Successful login email body", __FILE__);
+		$f->description = __("You may include any user fields in the email by entering the field like this: {name}.", __FILE__);
 		$fields->add($f);
 
 		/* // Logging target. */
