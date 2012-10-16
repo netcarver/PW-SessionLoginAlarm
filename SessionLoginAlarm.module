@@ -15,7 +15,6 @@
  * http://www.processwire.com
  * Licensed under GNU/GPL v2,  
  *
- * TODO throttle rate of sending failed attempt notifications
  * TODO add a log of successful + failed attempt logins
  * TODO module priority?
  */
@@ -200,13 +199,26 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		if(!$user) {
 			// Determine if a valid username was used => failed on password => miss-typed or hack attempt?
 			$user = $this->users->get($name);
-			if ($user->id ) {
+			if ($user->id) {
 				// send a failed-login attempt email to stored email address of this user (if any)
 				if (
 					 self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || 
 					(self::FAIL_ALERT_USER   == $this->sla_fail_alert && $user->sla_notify_fail)
-				)
-				$this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
+				) {
+					$now      = time();
+					$lastsent = $user->sla_fail_lastsent;
+					$diff     = (int)$now - (int)$lastsent;
+					$timeout  = $diff > 60;
+					if( !$lastsent || $timeout ) {
+						$sent = $this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
+						if( $sent ) {
+							$user->set('sla_fail_lastsent', $now );
+							$user->save();
+						}
+					}
+					else
+						echo "Not sending email [", var_export( $diff, true), "]";
+				}
 			}
 		}
 		else {
@@ -214,8 +226,13 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 			if (
 				 self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || 
 				(self::SUCCESS_ALERT_USER   == $this->sla_success_alert && $user->sla_notify_success)
-			)
-			$this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
+			) {
+				$sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
+				if( $sent ) {
+					$user->set('sla_fail_lastsent', '' );
+					$user->save();
+				}
+			}
 		}
 	}
 
@@ -238,10 +255,8 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$headers[] = "MIME-Version: 1.0";
 		$headers[] = "Content-type: text/plain; charset=UTF-8";
 		$headers[] = "Reply-To: login_alarm_blackhole@".$www;
-		//$headers[] = 'X-Mailer: PHP/' . phpversion();
 
-		$sent = @mail($email, $subject, $body, implode("\n",$headers));
-		return $sent;
+		return @mail($email, $subject, $body, implode("\n",$headers));
 	}
 
 
