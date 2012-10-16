@@ -15,7 +15,6 @@
  * http://www.processwire.com
  * Licensed under GNU/GPL v2,  
  *
- * TODO confirm correct module priority
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
@@ -33,13 +32,12 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title'     => 'Session Login Alarm', 
-			'version'   => 100, 
+			'version'   => 101, 
 			'summary'   => __('Handles sending of login attempt/success emails to users.', __FILE__),
 			'permanent' => false, 
 			'singular'  => true, 
 			'autoload'  => true, 
 			'author'    => 'Netcarver',
-			'priority'  => 99,
 		);
 	}
 
@@ -160,7 +158,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	 */
 	public function init()
 	{
-		$this->session->addHookAfter('login', $this, 'loginHook'); 
+		$this->session->addHookAfter('login', $this, 'loginHook', array('priority' => 2000) ); // Very low priority on this hook -- let others handle it first 
 		$this->addHookBefore('ProcessProfile::execute', $this, 'extendProfileFieldsHook' );
 	}
 
@@ -190,12 +188,24 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	 */
 	public function loginHook($event)
 	{
+//die( __CLASS__ );
 		$name = strtolower($event->arguments[0]);
 		if( 'guest' === $name )
 			return;
 
-		$user = $event->return; 
-		if(!$user) {
+		$user = $event->return;
+		if ($user instanceof User) {
+
+			self::saveLog($user, "SUCCESS");
+
+			// Send login notification email?
+			if (self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || (self::SUCCESS_ALERT_USER == $this->sla_success_alert && $user->sla_notify_success)) {
+				$sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
+				if( $sent ) 
+					$user->set('sla_fail_lastsent', '' )->save();
+			}
+		}
+		else {
 			// Determine if a valid username was used => failed on password => miss-typed or hack attempt?
 			$user = $this->users->get($name);
 			if ($user->id) {
@@ -215,21 +225,9 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 						$this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
 
 					// Record the time we logged/sent the notification...	
-					$user->set('sla_fail_lastsent', $now );
-					$user->save();
+					$user->set('sla_fail_lastsent', $now )->save();
 				}
 			}
-		}
-		else {
-			// Send login notification email?
-			if (self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || (self::SUCCESS_ALERT_USER == $this->sla_success_alert && $user->sla_notify_success)) {
-				$sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
-				if( $sent ) {
-					$user->set('sla_fail_lastsent', '' );
-					$user->save();
-				}
-			}
-			self::saveLog($user, "SUCCESS");
 		}
 	}
 
