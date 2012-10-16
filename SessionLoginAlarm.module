@@ -15,7 +15,7 @@
  * http://www.processwire.com
  * Licensed under GNU/GPL v2,  
  *
- * TODO conform correct module priority
+ * TODO confirm correct module priority
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
