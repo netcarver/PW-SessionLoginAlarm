@@ -16,7 +16,7 @@
  * Licensed under GNU/GPL v2,  
  *
  * TODO add a log of successful + failed attempt logins
- * TODO module priority?
+ * TODO conform correct module priority
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
@@ -34,7 +34,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title'     => 'Session Login Alarm', 
-			'version'   => 001, 
+			'version'   => 2, 
 			'summary'   => 'Handles sending of login attempt/success emails to users and/or administrators.',
 			'permanent' => false, 
 			'singular'  => true, 
