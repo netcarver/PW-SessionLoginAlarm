@@ -35,7 +35,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		return array(
 			'title'     => 'Session Login Alarm', 
 			'version'   => 2, 
-			'summary'   => 'Handles sending of login attempt/success emails to users and/or administrators.',
+			'summary'   => __('Handles sending of login attempt/success emails to users.', __FILE__),
 			'permanent' => false, 
 			'singular'  => true, 
 			'autoload'  => true, 
