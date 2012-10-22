@@ -32,12 +32,13 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title'     => 'Session Login Alarm', 
-			'version'   => 101, 
+			'version'   => 110, 
 			'summary'   => __('Handles sending of login attempt/success emails to users.', __FILE__),
 			'permanent' => false, 
 			'singular'  => true, 
 			'autoload'  => true, 
 			'author'    => 'Netcarver',
+			'requires'  => 'TextformatterTagParser',
 		);
 	}
 
@@ -241,10 +242,10 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		if ('' == $email)
 			return;
 
-		$subject = $this->parseTags($subject, $user); 
-		$body    = $this->parseTags($body, $user);
-		$www     = $this->config->httpHost;
+		$parser = $this->modules->get("TextformatterTagParser");
+		$parser->set('context', $user)->format($body)->format($subject);
 
+		$www     = $this->config->httpHost;
 		$headers[] = "From: " . __("Login Alarm", __FILE__) . " <login_alarm@$www>";
 		$headers[] = "MIME-Version: 1.0";
 		$headers[] = "Content-type: text/plain; charset=UTF-8";
@@ -259,39 +260,16 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	 * Save log entry
 	 */
 	protected function saveLog(User $user, $prefix = "FAILURE") {
+		
+		$entry = $prefix . " " . $this->sla_log_entry;
+
+		$parser = $this->modules->get("TextformatterTagParser");
+		$parser->set('context', $user)->format($entry);
+
 		$log = new FileLog($this->config->paths->logs, get_class($this));
-		$log->save($this->parseTags($prefix . " " . $this->sla_log_entry, $user));
+		$log->save($entry);
 	}
 
-
-
-	/**
-	 * Parse {tags} from $user and $_SERVER
-	 * Verbatim from Ryan Cramer's Login Notify module
-	 */
-	protected function parseTags($str, User $user, $urlencode = false) {
-
-		if(strpos($str, '{') === false) return $str; 
-		if(!preg_match_all('/\{([-_a-z0-9]+)\}/i', $str, $matches)) return $str; 
-
-		foreach($matches[1] as $key => $tag) {
-
-			if($tag == 'datetime') {
-				$value = date($this->config->dateFormat); 
-
-			} else if(isset($_SERVER[$tag])) {
-				$value = $this->sanitizer->text($_SERVER[$tag]); 
-
-			} else {
-				$value = (string) $user->get($tag);
-			}
-
-			if($urlencode) $value = urlencode($value);
-			$str = str_replace($matches[0][$key], $value, $str); 	
-		}
-
-		return $str; 
-	}
 
 
 
@@ -368,7 +346,6 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f->attr('name', 'sla_success_subject'); 
 		$f->attr('value', $data['sla_success_subject']); 
 		$f->label = __("Successful login email subject", __FILE__);
-		$f->attr('value', $data['sla_success_subject']); 
 		$fields->add($f); 
 
 		// Success email body...
