@@ -360,7 +360,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 		$f = $m->get("InputfieldText");
 		$f->attr('name', 'sla_log_entry');
 		$f->attr('value', $data['sla_log_entry']);
-		$f->label = "Logging to " . wire('config')->paths->logs . get_class($this) . ".txt";
+		$f->label = "Logging to " . wire('config')->paths->logs . __CLASS__ . ".txt";
 		$fields->add($f);
 
 		return $fields; 
