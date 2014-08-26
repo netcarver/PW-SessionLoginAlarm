@@ -5,245 +5,245 @@
  *
  * Handles sending of login attempt/success emails to users.
  *
- * NB. This is *not* the same as Ryan Cramer's Login Notifier 
- * module which mainly serves to notify an administrator of successful 
+ * NB. This is *not* the same as Ryan Cramer's Login Notifier
+ * module which mainly serves to notify an administrator of successful
  * logins. This module exists to notify the users that their account
  * has been accessed -- either successfully or unsuccessfully -- and
  * is meant mainly for higher value service sites.
- * 
- * For ProcessWire 2.x Copyright (C) 2012 by Ryan Cramer 
+ *
+ * For ProcessWire 2.x Copyright (C) 2012 by Ryan Cramer
  * http://www.processwire.com
- * Licensed under GNU/GPL v2,  
+ * Licensed under GNU/GPL v2,
  *
  */
 
 class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 {
-	const FAIL_ALERT_NEVER     = 0;
-	const FAIL_ALERT_USER      = 1;
-	const FAIL_ALERT_ALWAYS    = 2;
+    const FAIL_ALERT_NEVER     = 0;
+    const FAIL_ALERT_USER      = 1;
+    const FAIL_ALERT_ALWAYS    = 2;
 
-	const SUCCESS_ALERT_NEVER  = 0;
-	const SUCCESS_ALERT_USER   = 1;
-	const SUCCESS_ALERT_ALWAYS = 2;
-
-
-	public static function getModuleInfo() 
-	{
-		return array(
-			'title'     => 'Session Login Alarm', 
-			'version'   => 112,
-			'summary'   => __('Handles sending of login attempt/success emails to users.', __FILE__),
-			'permanent' => false, 
-			'singular'  => true, 
-			'autoload'  => true, 
-			'author'    => 'Netcarver',
-			'requires'  => 'TextformatterTagParser',
-		);
-	}
+    const SUCCESS_ALERT_NEVER  = 0;
+    const SUCCESS_ALERT_USER   = 1;
+    const SUCCESS_ALERT_ALWAYS = 2;
 
 
-
-	public function __construct() 
-	{
-		/**
-		 * List of per-user fields to be created and installed by this module.
-		 **/
-		$this->new_fields = array(
-			'sla_notify_fail' => array(
-				'type'      => 'FieldtypeCheckbox',
-				'label'     => __("Send failed login attempt notifications to user?", __FILE__),
-				'addtotemp' => array( 'user' ),
-			),
-			'sla_notify_success' => array(
-				'type'      => 'FieldtypeCheckbox',
-				'label'     => __("Send login notifications to user?", __FILE__),
-				'addtotemp' => array( 'user' ),
-			),
-			'sla_fail_lastsent' => array(
-				'type'      => 'FieldtypeText',
-				'label'     => __("Time the last failed attempt notification was sent", __FILE__),
-				'set'       => array( 'collapsed' => Inputfield::collapsedHidden, ),
-				'addtotemp' => array( 'user' ),
-			),
-		);
-	}
-
-
-	/**
-	 * Read the field data. Create the field if it doesn't exist and then
-	 * add it to the fieldgroups of any listed templates.
-	 **/
-	protected function installField( $name, &$fd )
-	{
-		$f = $this->fields->get( $name );
-		if( !$f ) {
-			$f = new Field();
-			$f->type = $this->modules->get( $fd['type'] );
-			$f->name = $name;
-			if( @$fd['label'] ) $f->label = $fd['label'];
-			if( count( @$fd['set'] ) )
-				foreach( $fd['set'] as $k => $v )
-					$f->set( $k, $v );
-
-			$f->save();
-
-			if( count( @$fd['addtotemp'] ) ) {
-				foreach( $fd['addtotemp'] as $temp ) {
-					$t = $this->templates->get( $temp );
-					if( !$t->id )
-						continue;	// no such template.
-
-					if( $t->fieldgroup->get( $name ) )
-						continue;	// field already in template
-
-					$t->fieldgroup->add( $f );
-					$t->fieldgroup->save();
-				}
-			}
-		}
-	}
+    public static function getModuleInfo()
+    {
+        return array(
+            'title'     => 'Session Login Alarm',
+            'version'   => 120,
+            'summary'   => __('Handles sending of login attempt/success emails to users.', __FILE__),
+            'permanent' => false,
+            'singular'  => true,
+            'autoload'  => true,
+            'author'    => 'Netcarver',
+            'requires'  => 'TextformatterTagParser',
+        );
+    }
 
 
 
-	/**
-	 * Removes our setup from the PW system.
-	 **/
-	public function ___uninstall()
-	{
-		$fieldgroups_to_save = array();
-
-		// Remove installed fields from fieldgroups...
-		foreach( $this->new_fields as $name => $fd ) {
-			if( count( @$fd['addtotemp'] ) ) {
-				foreach( $fd['addtotemp'] as $template ) {
-					$t = $this->templates->get( $template );
-					if( !$t->id )
-						continue;	// no such template
-
-					if( !$t->fieldgroup->get( $name ) )
-						continue;	// no such field in group
-
-					$t->fieldgroup->remove( $name );
-					$fieldgroups_to_save[ $template ] = $t->fieldgroup;
-				}
-			}
-		}
-
-		// Save changes to the fieldgroups...
-		if( count( $fieldgroups_to_save ) ) {
-			foreach( $fieldgroups_to_save as $name => $fg ) $fg->save();
-		}
-
-		// Now the fields can be deleted...
-		foreach( $this->new_fields as $name => $fd ) {
-			$f = $this->fields->get( $name );
-			if( $f->id )
-				$this->fields->delete( $f );
-		}
-	}
+    public function __construct()
+    {
+        /**
+         * List of per-user fields to be created and installed by this module.
+         **/
+        $this->new_fields = array(
+            'sla_notify_fail' => array(
+                'type'      => 'FieldtypeCheckbox',
+                'label'     => __("Send failed login attempt notifications to user?", __FILE__),
+                'addtotemp' => array( 'user' ),
+            ),
+            'sla_notify_success' => array(
+                'type'      => 'FieldtypeCheckbox',
+                'label'     => __("Send login notifications to user?", __FILE__),
+                'addtotemp' => array( 'user' ),
+            ),
+            'sla_fail_lastsent' => array(
+                'type'      => 'FieldtypeText',
+                'label'     => __("Time the last failed attempt notification was sent", __FILE__),
+                'set'       => array( 'collapsed' => Inputfield::collapsedHidden, ),
+                'addtotemp' => array( 'user' ),
+            ),
+        );
+    }
 
 
-	/**
-	 * Adds needed fields and sets up the per-user values needed for each existing user.
-	 **/
-	public function ___install()
-	{
-		foreach( $this->new_fields as $name => $field_data ) $this->installField( $name, $field_data );
-	}
+    /**
+     * Read the field data. Create the field if it doesn't exist and then
+     * add it to the fieldgroups of any listed templates.
+     **/
+    protected function installField($name, &$fd)
+    {
+        $f = $this->fields->get($name);
+        if( !$f ) {
+            $f = new Field();
+            $f->type = $this->modules->get( $fd['type'] );
+            $f->name = $name;
+            if( @$fd['label'] ) $f->label = $fd['label'];
+            if( count( @$fd['set'] ) )
+                foreach( $fd['set'] as $k => $v )
+                    $f->set( $k, $v );
 
+            $f->save();
 
+            if( count( @$fd['addtotemp'] ) ) {
+                foreach( $fd['addtotemp'] as $temp ) {
+                    $t = $this->templates->get( $temp );
+                    if( !$t->id )
+                        continue;   // no such template.
 
-	/**
-	 * Initialize the hooks
-	 */
-	public function init()
-	{
-		$this->session->addHookAfter('login', $this, 'loginHook', array('priority' => 2000) ); // Very low priority on this hook -- let others handle it first 
-		$this->addHookBefore('ProcessProfile::execute', $this, 'extendProfileFieldsHook' );
-	}
+                    if( $t->fieldgroup->get( $name ) )
+                        continue;   // field already in template
 
-
-
-	/**
-	 * Make sure some of the additional per-user fields appear in the user profile
-	 * so users get the chance to modify the settings via their profile.
-	 **/
-	protected function extendProfileFieldsHook(HookEvent $event)
-	{
-		$fields = $event->object->get('profileFields');
-
-		if( self::FAIL_ALERT_USER == $this->sla_fail_alert )
-			$fields[] = "sla_notify_fail";
-
-		if( self::SUCCESS_ALERT_USER == $this->sla_success_alert )
-			$fields[] = "sla_notify_success";
-
-		$event->object->set('profileFields', $fields );
-	}
+                    $t->fieldgroup->add( $f );
+                    $t->fieldgroup->save();
+                }
+            }
+        }
+    }
 
 
 
-	/**
-	 * Post login hook
-	 */
-	public function loginHook($event)
-	{
-		$name = strtolower($event->arguments[0]);
-		if( 'guest' === $name )
-			return;
+    /**
+     * Removes our setup from the PW system.
+     **/
+    public function ___uninstall()
+    {
+        $fieldgroups_to_save = array();
 
-		$user = $event->return;
-		if ($user instanceof User) {
+        // Remove installed fields from fieldgroups...
+        foreach( $this->new_fields as $name => $fd ) {
+            if( count( @$fd['addtotemp'] ) ) {
+                foreach( $fd['addtotemp'] as $template ) {
+                    $t = $this->templates->get( $template );
+                    if( !$t->id )
+                        continue;   // no such template
 
-			self::saveLog($user, "SUCCESS");
+                    if( !$t->fieldgroup->get( $name ) )
+                        continue;   // no such field in group
 
-			// Send login notification email?
-			if (self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || (self::SUCCESS_ALERT_USER == $this->sla_success_alert && $user->sla_notify_success)) {
-				$sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
-				if( $sent ) 
-					$user->set('sla_fail_lastsent', '' )->save();
-			}
-		}
-		else {
-			// Determine if a valid username was used => failed on password => miss-typed or hack attempt?
-			$user = $this->users->get($name);
-			if ($user->id) {
-				// send a failed-login attempt email to stored email address of this user (if any)
-				$now      = time();
-				$lastsent = $user->sla_fail_lastsent;
-				$diff     = (int)$now - (int)$lastsent;
-				$timeout  = $diff > 60;
+                    $t->fieldgroup->remove( $name );
+                    $fieldgroups_to_save[ $template ] = $t->fieldgroup;
+                }
+            }
+        }
 
-				if( !$lastsent || $timeout ) {
+        // Save changes to the fieldgroups...
+        if( count( $fieldgroups_to_save ) ) {
+            foreach( $fieldgroups_to_save as $name => $fg ) $fg->save();
+        }
 
-					// Log the failed attempt...
-					self::saveLog($user);
-
-					// Send an email if configured to do so...
-					if (self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || (self::FAIL_ALERT_USER == $this->sla_fail_alert && $user->sla_notify_fail))
-						$this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
-
-					// Record the time we logged/sent the notification...	
-					$user->set('sla_fail_lastsent', $now )->save();
-				}
-			}
-		}
-	}
+        // Now the fields can be deleted...
+        foreach( $this->new_fields as $name => $fd ) {
+            $f = $this->fields->get( $name );
+            if( $f->id )
+                $this->fields->delete( $f );
+        }
+    }
 
 
+    /**
+     * Adds needed fields and sets up the per-user values needed for each existing user.
+     **/
+    public function ___install()
+    {
+        foreach( $this->new_fields as $name => $field_data ) $this->installField( $name, $field_data );
+    }
 
-	/**
-	 * Send notification email
-	 */
-	protected function notifyEmail(User $user, $subject, $body)
-	{
-		$email = $user->email;
-		if ('' == $email)
-			return;
 
-		$parser = $this->modules->get("TextformatterTagParser");
-		$parser->set('context', $user)->format($body)->format($subject);
+
+    /**
+     * Initialize the hooks
+     */
+    public function init()
+    {
+        $this->session->addHookAfter('login', $this, 'loginHook', array('priority' => 2000) ); // Very low priority on this hook -- let others handle it first
+        $this->addHookBefore('ProcessProfile::execute', $this, 'extendProfileFieldsHook' );
+    }
+
+
+
+    /**
+     * Make sure some of the additional per-user fields appear in the user profile
+     * so users get the chance to modify the settings via their profile.
+     **/
+    protected function extendProfileFieldsHook(HookEvent $event)
+    {
+        $fields = $event->object->get('profileFields');
+
+        if( self::FAIL_ALERT_USER == $this->sla_fail_alert )
+            $fields[] = "sla_notify_fail";
+
+        if( self::SUCCESS_ALERT_USER == $this->sla_success_alert )
+            $fields[] = "sla_notify_success";
+
+        $event->object->set('profileFields', $fields );
+    }
+
+
+
+    /**
+     * Post login hook
+     */
+    public function loginHook($event)
+    {
+        $name = strtolower($event->arguments[0]);
+        if( 'guest' === $name )
+            return;
+
+        $user = $event->return;
+        if ($user instanceof User) {
+
+            self::saveLog($user, "SUCCESS");
+
+            // Send login notification email?
+            if (self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || (self::SUCCESS_ALERT_USER == $this->sla_success_alert && $user->sla_notify_success)) {
+                $sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
+                if( $sent )
+                    $user->set('sla_fail_lastsent', '' )->save();
+            }
+        }
+        else {
+            // Determine if a valid username was used => failed on password => miss-typed or hack attempt?
+            $user = $this->users->get($name);
+            if ($user->id) {
+                // send a failed-login attempt email to stored email address of this user (if any)
+                $now      = time();
+                $lastsent = $user->sla_fail_lastsent;
+                $diff     = (int)$now - (int)$lastsent;
+                $timeout  = $diff > 60;
+
+                if( !$lastsent || $timeout ) {
+
+                    // Log the failed attempt...
+                    self::saveLog($user);
+
+                    // Send an email if configured to do so...
+                    if (self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || (self::FAIL_ALERT_USER == $this->sla_fail_alert && $user->sla_notify_fail))
+                        $this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
+
+                    // Record the time we logged/sent the notification...	
+                    $user->set('sla_fail_lastsent', $now )->save();
+                }
+            }
+        }
+    }
+
+
+
+    /**
+     * Send notification email
+     */
+    protected function notifyEmail(User $user, $subject, $body)
+    {
+        $email = $user->email;
+        if ('' == $email)
+            return;
+
+        $parser = $this->modules->get("TextformatterTagParser");
+        $parser->set('context', $user)->format($body)->format($subject);
 
         $www     = $this->config->httpHost;
         $headers[] = "MIME-Version: 1.0";
@@ -260,114 +260,114 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 
 
 
-	/**
-	 * Save log entry
-	 */
-	protected function saveLog(User $user, $prefix = "FAILURE") {
-		
-		$entry = $prefix . " " . $this->sla_log_entry;
+    /**
+     * Save log entry
+     */
+    protected function saveLog(User $user, $prefix = "FAILURE") {
 
-		$parser = $this->modules->get("TextformatterTagParser");
-		$parser->set('context', $user)->format($entry);
+        $entry = $prefix . " " . $this->sla_log_entry;
 
-		$log = new FileLog($this->config->paths->logs, get_class($this));
-		$log->save($entry);
-	}
+        $parser = $this->modules->get("TextformatterTagParser");
+        $parser->set('context', $user)->format($entry);
 
-
-
-
-	/**
-	 * Default settings used by this module
-	 */
-	static protected $defaultSettings = array(
-		'sla_fail_alert'      => self::FAIL_ALERT_NEVER,
-		'sla_fail_subject'    => '{HTTP_HOST} Failed login attempt: {name}',
-		'sla_fail_body'       => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
-		'sla_success_alert'   => self::FAIL_ALERT_NEVER,
-		'sla_success_subject' => '{HTTP_HOST} Successful login: {name}',
-		'sla_success_body'    => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
-		'sla_log_entry'       => '{name} {REMOTE_ADDR}',
-	);
+        $log = new FileLog($this->config->paths->logs, get_class($this));
+        $log->save($entry);
+    }
 
 
 
-	/**
-	 * Build a form allowing configuration of this Module
-	 */
-	static public function getModuleConfigInputfields(array $data) {
 
-		$fields = new InputfieldWrapper();
-		$data   = array_merge(self::$defaultSettings, $data);
-		$m      = wire('modules');
+    /**
+     * Default settings used by this module
+     */
+    static protected $defaultSettings = array(
+        'sla_fail_alert'      => self::FAIL_ALERT_NEVER,
+        'sla_fail_subject'    => '{HTTP_HOST} Failed login attempt: {name}',
+        'sla_fail_body'       => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
+        'sla_success_alert'   => self::FAIL_ALERT_NEVER,
+        'sla_success_subject' => '{HTTP_HOST} Successful login: {name}',
+        'sla_success_body'    => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
+        'sla_log_entry'       => '{name} {REMOTE_ADDR}',
+    );
 
-		$f = $m->get("InputfieldMarkup"); 
-		$f->label = __("Login Notifier Configuration Notes", __FILE__);
-		$f->value = __(
-			"<p>You may specify any user field in the email subject, body or log entry by entering " . 
-			"it like this: {name} - which would be the user's login name, as an example. You may also specify " . 
-			"any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>", __FILE__);
-		$fields->add($f);
 
-		// Send failed attempt emails?
-		$f = $m->get('InputfieldRadios'); 
-		$f->attr('name', 'sla_fail_alert'); 
-		$f->label = __('Alert user on failed login attempts?', __FILE__);
-		$f->addOption(self::FAIL_ALERT_NEVER, __('Never', __FILE__)); 
-		$f->addOption(self::FAIL_ALERT_USER, __('Only if a user chooses in their account', __FILE__)); 
-		$f->addOption(self::FAIL_ALERT_ALWAYS, __('Always', __FILE__)); 
-		$f->attr('value', $data['sla_fail_alert']); 
-		$fields->add($f);
 
-		// Fail email subject
-		$f = $m->get("InputfieldText"); 
-		$f->attr('name', 'sla_fail_subject'); 
-		$f->attr('value', $data['sla_fail_subject']); 
-		$f->label = __("Failed attempt email subject", __FILE__);
-		$f->attr('value', $data['sla_fail_subject']); 
-		$fields->add($f); 
+    /**
+     * Build a form allowing configuration of this Module
+     */
+    static public function getModuleConfigInputfields(array $data) {
 
-		// Fail email body...
-		$f = $m->get("InputfieldTextarea"); 
-		$f->attr('name', 'sla_fail_body'); 
-		$f->attr('value', $data['sla_fail_body']);
-		$f->label = __("Failed attempt email body", __FILE__);
-		$f->description = __("You may include any user fields in the email by entering the field like this: {name}. ", __FILE__); 
-		$fields->add($f);
+        $fields = new InputfieldWrapper();
+        $data   = array_merge(self::$defaultSettings, $data);
+        $m      = wire('modules');
 
-		// Send success emails?
-		$f = $m->get('InputfieldRadios'); 
-		$f->attr('name', 'sla_success_alert'); 
-		$f->label = __('Alert user on successful login?', __FILE__);
-		$f->addOption(self::SUCCESS_ALERT_NEVER, __('Never', __FILE__)); 
-		$f->addOption(self::SUCCESS_ALERT_USER, __('Only if a user chooses in their account', __FILE__)); 
-		$f->addOption(self::SUCCESS_ALERT_ALWAYS, __('Always', __FILE__)); 
-		$f->attr('value', $data['sla_success_alert']); 
-		$fields->add($f);
+        $f = $m->get("InputfieldMarkup");
+        $f->label = __("Login Notifier Configuration Notes", __FILE__);
+        $f->value = __(
+            "<p>You may specify any user field in the email subject, body or log entry by entering " .
+            "it like this: {name} - which would be the user's login name, as an example. You may also specify " .
+            "any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>", __FILE__);
+        $fields->add($f);
 
-		// Success email subject
-		$f = $m->get("InputfieldText"); 
-		$f->attr('name', 'sla_success_subject'); 
-		$f->attr('value', $data['sla_success_subject']); 
-		$f->label = __("Successful login email subject", __FILE__);
-		$fields->add($f); 
+        // Send failed attempt emails?
+        $f = $m->get('InputfieldRadios');
+        $f->attr('name', 'sla_fail_alert');
+        $f->label = __('Alert user on failed login attempts?', __FILE__);
+        $f->addOption(self::FAIL_ALERT_NEVER, __('Never', __FILE__));
+        $f->addOption(self::FAIL_ALERT_USER, __('Only if a user chooses in their account', __FILE__));
+        $f->addOption(self::FAIL_ALERT_ALWAYS, __('Always', __FILE__));
+        $f->attr('value', $data['sla_fail_alert']);
+        $fields->add($f);
 
-		// Success email body...
-		$f = $m->get("InputfieldTextarea"); 
-		$f->attr('name', 'sla_success_body'); 
-		$f->attr('value', $data['sla_success_body']);
-		$f->label = __("Successful login email body", __FILE__);
-		$f->description = __("You may include any user fields in the email by entering the field like this: {name}.", __FILE__);
-		$fields->add($f);
+        // Fail email subject
+        $f = $m->get("InputfieldText");
+        $f->attr('name', 'sla_fail_subject');
+        $f->attr('value', $data['sla_fail_subject']);
+        $f->label = __("Failed attempt email subject", __FILE__);
+        $f->attr('value', $data['sla_fail_subject']);
+        $fields->add($f);
 
-		// Logging target.
-		$f = $m->get("InputfieldText");
-		$f->attr('name', 'sla_log_entry');
-		$f->attr('value', $data['sla_log_entry']);
-		$f->label = "Logging to " . wire('config')->paths->logs . __CLASS__ . ".txt";
-		$fields->add($f);
+        // Fail email body...
+        $f = $m->get("InputfieldTextarea");
+        $f->attr('name', 'sla_fail_body');
+        $f->attr('value', $data['sla_fail_body']);
+        $f->label = __("Failed attempt email body", __FILE__);
+        $f->description = __("You may include any user fields in the email by entering the field like this: {name}. ", __FILE__);
+        $fields->add($f);
 
-		return $fields; 
-	}
+        // Send success emails?
+        $f = $m->get('InputfieldRadios');
+        $f->attr('name', 'sla_success_alert');
+        $f->label = __('Alert user on successful login?', __FILE__);
+        $f->addOption(self::SUCCESS_ALERT_NEVER, __('Never', __FILE__));
+        $f->addOption(self::SUCCESS_ALERT_USER, __('Only if a user chooses in their account', __FILE__));
+        $f->addOption(self::SUCCESS_ALERT_ALWAYS, __('Always', __FILE__));
+        $f->attr('value', $data['sla_success_alert']);
+        $fields->add($f);
+
+        // Success email subject
+        $f = $m->get("InputfieldText");
+        $f->attr('name', 'sla_success_subject');
+        $f->attr('value', $data['sla_success_subject']);
+        $f->label = __("Successful login email subject", __FILE__);
+        $fields->add($f);
+
+        // Success email body...
+        $f = $m->get("InputfieldTextarea");
+        $f->attr('name', 'sla_success_body');
+        $f->attr('value', $data['sla_success_body']);
+        $f->label = __("Successful login email body", __FILE__);
+        $f->description = __("You may include any user fields in the email by entering the field like this: {name}.", __FILE__);
+        $fields->add($f);
+
+        // Logging target.
+        $f = $m->get("InputfieldText");
+        $f->attr('name', 'sla_log_entry');
+        $f->attr('value', $data['sla_log_entry']);
+        $f->label = "Logging to " . wire('config')->paths->logs . __CLASS__ . ".txt";
+        $fields->add($f);
+
+        return $fields;
+    }
 }
 
