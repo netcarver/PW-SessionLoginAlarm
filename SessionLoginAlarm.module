@@ -279,10 +279,10 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 	static protected $defaultSettings = array(
 		'sla_fail_alert'      => self::FAIL_ALERT_NEVER,
 		'sla_fail_subject'    => '{HTTP_HOST} Failed login attempt: {name}',
-		'sla_fail_body'       => "Date: {datetime}\nUser: {name}\nURL: {HTTP_HOST}{REQUEST_URI}\nAgent: {HTTP_USER_AGENT}", 
+		'sla_fail_body'       => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
 		'sla_success_alert'   => self::FAIL_ALERT_NEVER,
 		'sla_success_subject' => '{HTTP_HOST} Successful login: {name}',
-		'sla_success_body'    => "Date: {datetime}\nUser: {name}\nURL: {HTTP_HOST}{REQUEST_URI}\nAgent: {HTTP_USER_AGENT}", 
+		'sla_success_body'    => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
 		'sla_log_entry'       => '{name} {REMOTE_ADDR}',
 	);
 
