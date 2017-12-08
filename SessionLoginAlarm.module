@@ -270,16 +270,28 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $parser = $this->modules->get("TextformatterTagParser");
         $parser->set('context', $user)->format($body)->format($subject);
 
-        $www     = $this->config->httpHost;
+        $www       = $this->config->httpHost;
         $headers[] = "MIME-Version: 1.0";
         $headers[] = "Content-type: text/plain; charset=UTF-8";
-        $headers[] = "Reply-To: blackhole@".$www;
+        $headers[] = "X-Mailer: LoginAlarmRobot/2";
 
-        if (class_exists('WireMail')) {
-            wireMail($email, "login_alarm@$www", $subject, $body, ['headers' => $headers]);
+
+        if (class_exists('\ProcessWire\WireMail')) {
+            $m = wireMail();
+            $m
+                ->to($email)
+                ->toName($user->name)
+                ->from("login.notifications@$www", 'Email Robot')
+                ->subject($subject)
+                ->body($body)
+                ->header('Content-type', 'text/plain; charset=UTF-8')
+                ->header('X-Mailer', 'LoginAlarmRobot/2')
+                ->header('MIME-Version', '1.0')
+                ->send()
+                ;
         } else {
             $headers[] = "From: " . __("Login Alarm") . " <login_alarm@$www>";
-            @mail($email, $subject, $body, implode("\n", $headers));
+            mail($email, $subject, $body, implode("\n", $headers));
         }
     }
 
