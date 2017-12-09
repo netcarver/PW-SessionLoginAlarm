@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 /**
  * ProcessWire Session Login Alarm Module
@@ -11,7 +11,7 @@
  * has been accessed -- either successfully or unsuccessfully -- and
  * is meant mainly for higher value service sites.
  *
- * For ProcessWire 2.x Copyright (C) 2012 by Ryan Cramer
+ * For ProcessWire 3.x Copyright (C) 2012 by Ryan Cramer
  * http://www.processwire.com
  * Licensed under GNU/GPL v2,
  *
@@ -30,16 +30,18 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
 
     public static function getModuleInfo()
     {
-        return array(
+        return [
             'title'     => 'Session Login Alarm',
-            'version'   => 120,
-            'summary'   => __('Handles sending of login attempt/success emails to users.', __FILE__),
+            'version'   => '2.0.0',
+            'summary'   => __('Handles sending of login attempt/success emails to users.'),
             'permanent' => false,
             'singular'  => true,
-            'autoload'  => true,
+            'autoload'  => 'template=admin',
             'author'    => 'Netcarver',
-            'requires'  => 'TextformatterTagParser',
-        );
+            'requires'  => 'ProcessWire>=3.0.0, PHP>=5.4.0, TextformatterTagParser',
+            'installs'  => 'TextformatterTagParser',
+            'icon'      => 'bell-o',
+        ];
     }
 
 
@@ -49,24 +51,26 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         /**
          * List of per-user fields to be created and installed by this module.
          **/
-        $this->new_fields = array(
-            'sla_notify_fail' => array(
+        $this->new_fields = [
+            'sla_notify_fail' => [
                 'type'      => 'FieldtypeCheckbox',
-                'label'     => __("Send failed login attempt notifications to user?", __FILE__),
-                'addtotemp' => array( 'user' ),
-            ),
-            'sla_notify_success' => array(
+                'label'     => __("Send failed login attempt notifications to user?"),
+                'set'       => ['tag' => 'login-alarm'],
+                'addtotemp' => ['user'],
+            ],
+            'sla_notify_success' => [
                 'type'      => 'FieldtypeCheckbox',
-                'label'     => __("Send login notifications to user?", __FILE__),
-                'addtotemp' => array( 'user' ),
-            ),
-            'sla_fail_lastsent' => array(
+                'label'     => __("Send login notifications to user?"),
+                'set'       => ['tag' => 'login-alarm'],
+                'addtotemp' => ['user'],
+            ],
+            'sla_fail_lastsent' => [
                 'type'      => 'FieldtypeText',
-                'label'     => __("Time the last failed attempt notification was sent", __FILE__),
-                'set'       => array( 'collapsed' => Inputfield::collapsedHidden, ),
-                'addtotemp' => array( 'user' ),
-            ),
-        );
+                'label'     => __("Time the last failed attempt notification was sent"),
+                'set'       => ['collapsed' => Inputfield::collapsedHidden, 'tag' => 'login-alarm'],
+                'addtotemp' => ['user'],
+            ],
+        ];
     }
 
 
@@ -77,27 +81,34 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
     protected function installField($name, &$fd)
     {
         $f = $this->fields->get($name);
-        if( !$f ) {
+        if (!$f) {
             $f = new Field();
-            $f->type = $this->modules->get( $fd['type'] );
+            $f->type = $this->modules->get($fd['type']);
             $f->name = $name;
-            if( @$fd['label'] ) $f->label = $fd['label'];
-            if( count( @$fd['set'] ) )
-                foreach( $fd['set'] as $k => $v )
-                    $f->set( $k, $v );
+            if (@$fd['label']) {
+                $f->label = $fd['label'];
+            }
+
+            if (count(@$fd['set'])) {
+                foreach ($fd['set'] as $k => $v) {
+                    $f->set($k, $v);
+                }
+            }
 
             $f->save();
 
-            if( count( @$fd['addtotemp'] ) ) {
-                foreach( $fd['addtotemp'] as $temp ) {
-                    $t = $this->templates->get( $temp );
-                    if( !$t->id )
+            if (count(@$fd['addtotemp'])) {
+                foreach ($fd['addtotemp'] as $temp) {
+                    $t = $this->templates->get($temp);
+                    if (!$t->id) {
                         continue;   // no such template.
+                    }
 
-                    if( $t->fieldgroup->get( $name ) )
+                    if ($t->fieldgroup->get($name)) {
                         continue;   // field already in template
+                    }
 
-                    $t->fieldgroup->add( $f );
+                    $t->fieldgroup->add($f);
                     $t->fieldgroup->save();
                 }
             }
@@ -111,35 +122,40 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
      **/
     public function ___uninstall()
     {
-        $fieldgroups_to_save = array();
+        $fieldgroups_to_save = [];
 
         // Remove installed fields from fieldgroups...
-        foreach( $this->new_fields as $name => $fd ) {
-            if( count( @$fd['addtotemp'] ) ) {
-                foreach( $fd['addtotemp'] as $template ) {
-                    $t = $this->templates->get( $template );
-                    if( !$t->id )
+        foreach ($this->new_fields as $name => $fd) {
+            if (count(@$fd['addtotemp'])) {
+                foreach ($fd['addtotemp'] as $template) {
+                    $t = $this->templates->get($template);
+                    if (!$t->id) {
                         continue;   // no such template
+                    }
 
-                    if( !$t->fieldgroup->get( $name ) )
+                    if (!$t->fieldgroup->get($name)) {
                         continue;   // no such field in group
+                    }
 
-                    $t->fieldgroup->remove( $name );
+                    $t->fieldgroup->remove($name);
                     $fieldgroups_to_save[ $template ] = $t->fieldgroup;
                 }
             }
         }
 
         // Save changes to the fieldgroups...
-        if( count( $fieldgroups_to_save ) ) {
-            foreach( $fieldgroups_to_save as $name => $fg ) $fg->save();
+        if (count($fieldgroups_to_save)) {
+            foreach ($fieldgroups_to_save as $name => $fg) {
+                $fg->save();
+            }
         }
 
         // Now the fields can be deleted...
-        foreach( $this->new_fields as $name => $fd ) {
-            $f = $this->fields->get( $name );
-            if( $f->id )
-                $this->fields->delete( $f );
+        foreach ($this->new_fields as $name => $fd) {
+            $f = $this->fields->get($name);
+            if ($f->id) {
+                $this->fields->delete($f);
+            }
         }
     }
 
@@ -149,7 +165,9 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
      **/
     public function ___install()
     {
-        foreach( $this->new_fields as $name => $field_data ) $this->installField( $name, $field_data );
+        foreach ($this->new_fields as $name => $field_data) {
+            $this->installField($name, $field_data);
+        }
     }
 
 
@@ -159,8 +177,8 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
      */
     public function init()
     {
-        $this->session->addHookAfter('login', $this, 'loginHook', array('priority' => 2000) ); // Very low priority on this hook -- let others handle it first
-        $this->addHookBefore('ProcessProfile::execute', $this, 'extendProfileFieldsHook' );
+        $this->session->addHookAfter('login', $this, 'loginHook', ['priority' => 2000]); // Very low priority on this hook -- let others handle it first
+        $this->addHookBefore('ProcessProfile::execute', $this, 'extendProfileFieldsHook');
     }
 
 
@@ -173,13 +191,15 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
     {
         $fields = $event->object->get('profileFields');
 
-        if( self::FAIL_ALERT_USER == $this->sla_fail_alert )
+        if (self::FAIL_ALERT_USER == $this->sla_fail_alert) {
             $fields[] = "sla_notify_fail";
+        }
 
-        if( self::SUCCESS_ALERT_USER == $this->sla_success_alert )
+        if (self::SUCCESS_ALERT_USER == $this->sla_success_alert) {
             $fields[] = "sla_notify_success";
+        }
 
-        $event->object->set('profileFields', $fields );
+        $event->object->set('profileFields', $fields);
     }
 
 
@@ -190,8 +210,9 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
     public function loginHook($event)
     {
         $name = strtolower($event->arguments[0]);
-        if( 'guest' === $name )
+        if ('guest' === $name) {
             return;
+        }
 
         $user = $event->return;
         if ($user instanceof User) {
@@ -201,11 +222,12 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
             // Send login notification email?
             if (self::SUCCESS_ALERT_ALWAYS == $this->sla_success_alert || (self::SUCCESS_ALERT_USER == $this->sla_success_alert && $user->sla_notify_success)) {
                 $sent = $this->notifyEmail($user, $this->sla_success_subject, $this->sla_success_body);
-                if( $sent )
-                    $user->set('sla_fail_lastsent', '' )->save();
+                if ($sent) {
+                    //$user->setOutputFormatting(false);
+                    $user->set('sla_fail_lastsent', '')->save();
+                }
             }
-        }
-        else {
+        } else {
             // Determine if a valid username was used => failed on password => miss-typed or hack attempt?
             $user = $this->users->get($name);
             if ($user->id) {
@@ -215,17 +237,19 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
                 $diff     = (int)$now - (int)$lastsent;
                 $timeout  = $diff > 60;
 
-                if( !$lastsent || $timeout ) {
+                if (!$lastsent || $timeout) {
 
                     // Log the failed attempt...
                     self::saveLog($user);
 
                     // Send an email if configured to do so...
-                    if (self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || (self::FAIL_ALERT_USER == $this->sla_fail_alert && $user->sla_notify_fail))
+                    if (self::FAIL_ALERT_ALWAYS == $this->sla_fail_alert || (self::FAIL_ALERT_USER == $this->sla_fail_alert && $user->sla_notify_fail)) {
                         $this->notifyEmail($user, $this->sla_fail_subject, $this->sla_fail_body);
+                    }
 
-                    // Record the time we logged/sent the notification...	
-                    $user->set('sla_fail_lastsent', $now )->save();
+                    // Record the time we logged/sent the notification...
+                    //$user->setOutputFormatting(false);
+                    $user->set('sla_fail_lastsent', $now)->save();
                 }
             }
         }
@@ -239,22 +263,35 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
     protected function notifyEmail(User $user, $subject, $body)
     {
         $email = $user->email;
-        if ('' == $email)
+        if ('' == $email) {
             return;
+        }
 
         $parser = $this->modules->get("TextformatterTagParser");
         $parser->set('context', $user)->format($body)->format($subject);
 
-        $www     = $this->config->httpHost;
+        $www       = $this->config->httpHost;
         $headers[] = "MIME-Version: 1.0";
         $headers[] = "Content-type: text/plain; charset=UTF-8";
-        $headers[] = "Reply-To: blackhole@".$www;
+        $headers[] = "X-Mailer: LoginAlarmRobot/2";
 
-        if (class_exists('WireMail')) {
-            wireMail($email, "login_alarm@$www", $subject, $body, array('headers' => $headers));
+
+        if (class_exists('\ProcessWire\WireMail')) {
+            $m = wireMail();
+            $m
+                ->to($email)
+                ->toName($user->name)
+                ->from("login.notifications@$www", 'Email Robot')
+                ->subject($subject)
+                ->body($body)
+                ->header('Content-type', 'text/plain; charset=UTF-8')
+                ->header('X-Mailer', 'LoginAlarmRobot/2')
+                ->header('MIME-Version', '1.0')
+                ->send()
+                ;
         } else {
-            $headers[] = "From: " . __("Login Alarm", __FILE__) . " <login_alarm@$www>";
-            @mail($email, $subject, $body, implode("\n",$headers));
+            $headers[] = "From: " . __("Login Alarm") . " <login_alarm@$www>";
+            mail($email, $subject, $body, implode("\n", $headers));
         }
     }
 
@@ -270,8 +307,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $parser = $this->modules->get("TextformatterTagParser");
         $parser->set('context', $user)->format($entry);
 
-        $log = new FileLog($this->config->paths->logs, get_class($this));
-        $log->save($entry);
+        wire('log')->save('login-alarm', $entry);
     }
 
 
@@ -280,15 +316,15 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
     /**
      * Default settings used by this module
      */
-    static protected $defaultSettings = array(
+    static protected $defaultSettings = [
         'sla_fail_alert'      => self::FAIL_ALERT_NEVER,
-        'sla_fail_subject'    => '{HTTP_HOST} Failed login attempt: {name}',
-        'sla_fail_body'       => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
+        'sla_fail_subject'    => 'Detected a failed login attempt for account {name}@{HTTP_HOST}',
+        'sla_fail_body'       => "A failed login attempt for account {name} occurred on {datetime} from a browser with the following details...\n\nAgent: {HTTP_USER_AGENT}\nIP: {REMOTE_ADDR}",
         'sla_success_alert'   => self::FAIL_ALERT_NEVER,
-        'sla_success_subject' => '{HTTP_HOST} Successful login: {name}',
-        'sla_success_body'    => "Date: {datetime}\nUser: {name}\nAgent: {HTTP_USER_AGENT}",
+        'sla_success_subject' => 'Successful login: {name}@{HTTP_HOST}',
+        'sla_success_body'    => "A successful login attempt for account {name} occurred on {datetime} from a browser with the following details...\n\nAgent: {HTTP_USER_AGENT}\nIP: {REMOTE_ADDR}",
         'sla_log_entry'       => '{name} {REMOTE_ADDR}',
-    );
+    ];
 
 
 
@@ -302,20 +338,20 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $m      = wire('modules');
 
         $f = $m->get("InputfieldMarkup");
-        $f->label = __("Login Notifier Configuration Notes", __FILE__);
+        $f->label = __("Login Notifier Configuration Notes");
         $f->value = __(
             "<p>You may specify any user field in the email subject, body or log entry by entering " .
             "it like this: {name} - which would be the user's login name, as an example. You may also specify " .
-            "any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>", __FILE__);
+            "any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>");
         $fields->add($f);
 
         // Send failed attempt emails?
         $f = $m->get('InputfieldRadios');
         $f->attr('name', 'sla_fail_alert');
-        $f->label = __('Alert user on failed login attempts?', __FILE__);
-        $f->addOption(self::FAIL_ALERT_NEVER, __('Never', __FILE__));
-        $f->addOption(self::FAIL_ALERT_USER, __('Only if a user chooses in their account', __FILE__));
-        $f->addOption(self::FAIL_ALERT_ALWAYS, __('Always', __FILE__));
+        $f->label = __('Alert user on failed login attempts?');
+        $f->addOption(self::FAIL_ALERT_NEVER, __('Never'));
+        $f->addOption(self::FAIL_ALERT_USER, __('Only if a user chooses in their account'));
+        $f->addOption(self::FAIL_ALERT_ALWAYS, __('Always'));
         $f->attr('value', $data['sla_fail_alert']);
         $fields->add($f);
 
@@ -323,7 +359,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f = $m->get("InputfieldText");
         $f->attr('name', 'sla_fail_subject');
         $f->attr('value', $data['sla_fail_subject']);
-        $f->label = __("Failed attempt email subject", __FILE__);
+        $f->label = __("Failed attempt email subject");
         $f->attr('value', $data['sla_fail_subject']);
         $fields->add($f);
 
@@ -331,17 +367,17 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f = $m->get("InputfieldTextarea");
         $f->attr('name', 'sla_fail_body');
         $f->attr('value', $data['sla_fail_body']);
-        $f->label = __("Failed attempt email body", __FILE__);
-        $f->description = __("You may include any user fields in the email by entering the field like this: {name}. ", __FILE__);
+        $f->label = __("Failed attempt email body");
+        $f->description = __("You may include any user fields in the email by entering the field like this: {name}. ");
         $fields->add($f);
 
         // Send success emails?
         $f = $m->get('InputfieldRadios');
         $f->attr('name', 'sla_success_alert');
-        $f->label = __('Alert user on successful login?', __FILE__);
-        $f->addOption(self::SUCCESS_ALERT_NEVER, __('Never', __FILE__));
-        $f->addOption(self::SUCCESS_ALERT_USER, __('Only if a user chooses in their account', __FILE__));
-        $f->addOption(self::SUCCESS_ALERT_ALWAYS, __('Always', __FILE__));
+        $f->label = __('Alert user on successful login?');
+        $f->addOption(self::SUCCESS_ALERT_NEVER, __('Never'));
+        $f->addOption(self::SUCCESS_ALERT_USER, __('Only if a user chooses in their account'));
+        $f->addOption(self::SUCCESS_ALERT_ALWAYS, __('Always'));
         $f->attr('value', $data['sla_success_alert']);
         $fields->add($f);
 
@@ -349,22 +385,22 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f = $m->get("InputfieldText");
         $f->attr('name', 'sla_success_subject');
         $f->attr('value', $data['sla_success_subject']);
-        $f->label = __("Successful login email subject", __FILE__);
+        $f->label = __("Successful login email subject");
         $fields->add($f);
 
         // Success email body...
         $f = $m->get("InputfieldTextarea");
         $f->attr('name', 'sla_success_body');
         $f->attr('value', $data['sla_success_body']);
-        $f->label = __("Successful login email body", __FILE__);
-        $f->description = __("You may include any user fields in the email by entering the field like this: {name}.", __FILE__);
+        $f->label = __("Successful login email body");
+        $f->description = __("You may include any user fields in the email by entering the field like this: {name}.");
         $fields->add($f);
 
         // Logging target.
         $f = $m->get("InputfieldText");
         $f->attr('name', 'sla_log_entry');
         $f->attr('value', $data['sla_log_entry']);
-        $f->label = "Logging to " . wire('config')->paths->logs . __CLASS__ . ".txt";
+        $f->label = __("Logfile format");
         $fields->add($f);
 
         return $fields;
