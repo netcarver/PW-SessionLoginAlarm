@@ -1,5 +1,9 @@
 # **Changelog** - [Keep a Changelog]
 
+## [2.0.1] - 2018-07-06
+- Add "login-alarm" tag to fields. These should keep the fields separate from the installation's fields in the field
+  list.
+
 ## [2.0.0] - 2017-12-09
 - BREAKING CHANGE: Update for PW3+ using namespace ProcessWire.
 - BREAKING CHANGE: Require PHP5.4+ as we now use short array syntax.
@@ -40,7 +44,8 @@
 
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
 [Keep a Changelog]:    http://keepachangelog.com/en/1.0.0/
-[Upcoming]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.0...HEAD
+[Upcoming]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.1...HEAD
+[2.0.1]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/1.1.2...2.0.0
 [1.1.2]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/1.1.1...1.1.2
 [1.1.1]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/1.1.0...1.1.1
