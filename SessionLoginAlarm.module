@@ -270,7 +270,11 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $parser = $this->modules->get("TextformatterTagParser");
         $parser->set('context', $user)->format($body)->format($subject);
 
-        $www       = $this->config->httpHost;
+        if (empty($this->sla_from_domain)) {
+            $www = $this->config->httpHost;
+        } else {
+            $www = $this->sla_from_domain;
+        }
         // Make sure there is no port attached to the host...
         $p = explore(":", $www);
         $www = $p[0];
@@ -328,6 +332,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         'sla_success_subject' => 'Successful login: {name}@{HTTP_HOST}',
         'sla_success_body'    => "A successful login attempt for account {name} occurred on {datetime} from a browser with the following details...\n\nAgent: {HTTP_USER_AGENT}\nIP: {REMOTE_ADDR}",
         'sla_log_entry'       => '{name} {REMOTE_ADDR}',
+        'sla_from_domain'     => '',
     ];
 
 
@@ -405,6 +410,14 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->attr('name', 'sla_log_entry');
         $f->attr('value', $data['sla_log_entry']);
         $f->label = __("Logfile format");
+        $fields->add($f);
+
+        // Success email subject
+        $f = $m->get("InputfieldText");
+        $f->attr('name', 'sla_from_domain');
+        $f->attr('value', $data['sla_from_domain']);
+        $f->label = __("Which domain should this email appear to be sent from.");
+        $f->notes = __("Leave blank to auto-detect from config httpHost setting.");
         $fields->add($f);
 
         return $fields;
