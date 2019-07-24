@@ -354,6 +354,17 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
             "any PHP \$_SERVER var like {REMOTE_ADDR}, {HTTP_USER_AGENT}, {REQUEST_URI}, etc.</p>");
         $fields->add($f);
 
+        $fail = $m->get("InputfieldFieldset");
+        $fail->label = __('Failed Login Attempt Settings');
+        $fail->columnWidth = 50;
+
+        $success = $m->get("InputfieldFieldset");
+        $success->label = __('Successful Login Settings');
+        $success->columnWidth = 50;
+
+        $fields->add($fail);
+        $fields->add($success);
+
         // Send failed attempt emails?
         $f = $m->get('InputfieldRadios');
         $f->attr('name', 'sla_fail_alert');
@@ -362,7 +373,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->addOption(self::FAIL_ALERT_USER, __('Only if a user chooses in their account'));
         $f->addOption(self::FAIL_ALERT_ALWAYS, __('Always'));
         $f->attr('value', $data['sla_fail_alert']);
-        $fields->add($f);
+        $fail->add($f);
 
         // Fail email subject
         $f = $m->get("InputfieldText");
@@ -370,7 +381,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->attr('value', $data['sla_fail_subject']);
         $f->label = __("Failed attempt email subject");
         $f->attr('value', $data['sla_fail_subject']);
-        $fields->add($f);
+        $fail->add($f);
 
         // Fail email body...
         $f = $m->get("InputfieldTextarea");
@@ -378,7 +389,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->attr('value', $data['sla_fail_body']);
         $f->label = __("Failed attempt email body");
         $f->description = __("You may include any user fields in the email by entering the field like this: {name}. ");
-        $fields->add($f);
+        $fail->add($f);
 
         // Send success emails?
         $f = $m->get('InputfieldRadios');
@@ -388,14 +399,14 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->addOption(self::SUCCESS_ALERT_USER, __('Only if a user chooses in their account'));
         $f->addOption(self::SUCCESS_ALERT_ALWAYS, __('Always'));
         $f->attr('value', $data['sla_success_alert']);
-        $fields->add($f);
+        $success->add($f);
 
         // Success email subject
         $f = $m->get("InputfieldText");
         $f->attr('name', 'sla_success_subject');
         $f->attr('value', $data['sla_success_subject']);
         $f->label = __("Successful login email subject");
-        $fields->add($f);
+        $success->add($f);
 
         // Success email body...
         $f = $m->get("InputfieldTextarea");
@@ -403,7 +414,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->attr('value', $data['sla_success_body']);
         $f->label = __("Successful login email body");
         $f->description = __("You may include any user fields in the email by entering the field like this: {name}.");
-        $fields->add($f);
+        $success->add($f);
 
         // Logging target.
         $f = $m->get("InputfieldText");
