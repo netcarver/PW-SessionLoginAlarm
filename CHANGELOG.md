@@ -1,8 +1,19 @@
-# **Changelog** - [Keep a Changelog]
+# **Changelog**
+
+See [Keep a Changelog].
+
+
+## [Upcoming]
+
+
+## [2.0.2] - 2019-07-24
+- Strip port number from httpHost value.
+
 
 ## [2.0.1] - 2018-07-06
 - Add "login-alarm" tag to fields. These should keep the fields separate from the installation's fields in the field
   list.
+
 
 ## [2.0.0] - 2017-12-09
 - BREAKING CHANGE: Update for PW3+ using namespace ProcessWire.
@@ -44,7 +55,8 @@
 
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
 [Keep a Changelog]:    http://keepachangelog.com/en/1.0.0/
-[Upcoming]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.1...HEAD
+[Upcoming]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.2...HEAD
+[2.0.2]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.1...2.0.2
 [2.0.1]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/1.1.2...2.0.0
 [1.1.2]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/1.1.1...1.1.2
