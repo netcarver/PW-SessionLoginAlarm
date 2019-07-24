@@ -5,6 +5,10 @@ See [Keep a Changelog].
 
 ## [Upcoming]
 
+## [2.0.3] - 2019-07-24
+- Add config setting to allow sending domain override. Useful if accessing on a subdomain.
+- Better config field layout.
+
 
 ## [2.0.2] - 2019-07-24
 - Strip port number from httpHost value.
@@ -55,7 +59,8 @@ See [Keep a Changelog].
 
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
 [Keep a Changelog]:    http://keepachangelog.com/en/1.0.0/
-[Upcoming]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.2...HEAD
+[Upcoming]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.3...HEAD
+[2.0.3]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.2...2.0.3
 [2.0.2]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.1...2.0.2
 [2.0.1]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/netcarver/PW-SessionLoginAlarm/compare/1.1.2...2.0.0
