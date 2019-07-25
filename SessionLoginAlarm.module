@@ -289,6 +289,13 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
                 ->header('MIME-Version', '1.0')
                 ;
 
+            if (wire('modules')->isInstalled('WireMailBranding')) {
+                // WireMailBranding doesn't work if there is no HTMLBody.
+                // In this case, we make a simple version of the textual body
+                // in order to allow these emails out with our branding...
+                $m->bodyHTML(nl2br($body));
+            }
+
             if (!empty($this->sla_replyto_address)) {
                 $m->replyTo($this->sla_replyto_address);
             }
