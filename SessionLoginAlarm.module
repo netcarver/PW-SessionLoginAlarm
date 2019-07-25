@@ -270,18 +270,18 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $parser = $this->modules->get("TextformatterTagParser");
         $parser->set('context', $user)->format($body)->format($subject);
 
-        if (empty($this->sla_from_domain)) {
-            $www = $this->config->httpHost;
-        } else {
-            $www = $this->sla_from_domain;
-        }
-        // Make sure there is no port attached to the host...
-        $p = explore(":", $www);
-        $www = $p[0];
+        /* if (empty($this->sla_from_domain)) { */
+        /*     $www = $this->config->httpHost; */
+        /* } else { */
+        /*     $www = $this->sla_from_domain; */
+        /* } */
+        /* // Make sure there is no port attached to the host... */
+        /* $p = explore(":", $www); */
+        /* $www = $p[0]; */
 
         $headers[] = "MIME-Version: 1.0";
         $headers[] = "Content-type: text/plain; charset=UTF-8";
-        $headers[] = "X-Mailer: LoginAlarmRobot/2";
+        $headers[] = "X-Mailer: LoginNotificationRobot/2";
 
 
         if (class_exists('\ProcessWire\WireMail')) {
@@ -289,16 +289,22 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
             $m
                 ->to($email)
                 ->toName($user->name)
-                ->from("login.notifications@$www", 'Email Robot')
+                ->from($this->sla_from_address)
+                ->fromName($this->sla_from_name)
                 ->subject($subject)
                 ->body($body)
                 ->header('Content-type', 'text/plain; charset=UTF-8')
-                ->header('X-Mailer', 'LoginAlarmRobot/2')
+                ->header('X-Mailer', 'LoginNotificationRobot/2')
                 ->header('MIME-Version', '1.0')
-                ->send()
                 ;
+
+            if (!empty($this->sla_replyto_address)) {
+                $m->replyTo($this->sla_replyto_address);
+            }
+
+            $m->send();
         } else {
-            $headers[] = "From: " . __("Login Alarm") . " <login_alarm@$www>";
+            $headers[] = "From: " . $this->sla_from_name . " <{$this->sla_from_address}>" ;
             mail($email, $subject, $body, implode("\n", $headers));
         }
     }
@@ -332,7 +338,9 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         'sla_success_subject' => 'Successful login: {name}@{HTTP_HOST}',
         'sla_success_body'    => "A successful login attempt for account {name} occurred on {datetime} from a browser with the following details...\n\nAgent: {HTTP_USER_AGENT}\nIP: {REMOTE_ADDR}",
         'sla_log_entry'       => '{name} {REMOTE_ADDR}',
-        'sla_from_domain'     => '',
+        'sla_from_name'       => 'Login Notification Robot',
+        'sla_from_address'    => '',
+        'sla_replyto_address' => '',
     ];
 
 
@@ -362,8 +370,12 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $success->label = __('Successful Login Settings');
         $success->columnWidth = 50;
 
+        $from = $m->get("InputfieldFieldset");
+        $from->label = __('From Settings');
+
         $fields->add($fail);
         $fields->add($success);
+        $fields->add($from);
 
         // Send failed attempt emails?
         $f = $m->get('InputfieldRadios');
@@ -423,13 +435,27 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->label = __("Logfile format");
         $fields->add($f);
 
-        // Success email subject
         $f = $m->get("InputfieldText");
-        $f->attr('name', 'sla_from_domain');
-        $f->attr('value', $data['sla_from_domain']);
-        $f->label = __("Which domain should this email appear to be sent from.");
-        $f->notes = __("Leave blank to auto-detect from config httpHost setting.");
-        $fields->add($f);
+        $f->attr('name', 'sla_from_name');
+        $f->attr('value', $data['sla_from_name']);
+        $f->label = __("The name (not email address) the message should come from.");
+        $from->add($f);
+
+        if (empty($data['sla_from_address'])) {
+            $data['sla_from_address'] = "login.notifier@" . wire('config')->httpHost;
+        }
+        $f = $m->get("InputfieldEmail");
+        $f->attr('name', 'sla_from_address');
+        $f->attr('value', $data['sla_from_address']);
+        $f->label = __("The email address (not name) the message should come from.");
+        $from->add($f);
+
+        $f = $m->get("InputfieldEmail");
+        $f->attr('name', 'sla_replyto_address');
+        $f->attr('value', $data['sla_replyto_address']);
+        $f->label = __("Different reply-to address (if needed.)");
+        $f->notes = __("Leave blank if not needed.");
+        $from->add($f);
 
         return $fields;
     }
