@@ -282,7 +282,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
                 ->toName($user->name)
                 ->from($this->sla_from_address)
                 ->fromName($this->sla_from_name)
-                ->subject($subject)
+                ->subject(trim($subject))
                 ->body($body)
                 ->header('Content-type', 'text/plain; charset=UTF-8')
                 ->header('X-Mailer', 'LoginNotificationRobot/2')
