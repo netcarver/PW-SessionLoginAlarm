@@ -270,15 +270,6 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $parser = $this->modules->get("TextformatterTagParser");
         $parser->set('context', $user)->format($body)->format($subject);
 
-        /* if (empty($this->sla_from_domain)) { */
-        /*     $www = $this->config->httpHost; */
-        /* } else { */
-        /*     $www = $this->sla_from_domain; */
-        /* } */
-        /* // Make sure there is no port attached to the host... */
-        /* $p = explore(":", $www); */
-        /* $www = $p[0]; */
-
         $headers[] = "MIME-Version: 1.0";
         $headers[] = "Content-type: text/plain; charset=UTF-8";
         $headers[] = "X-Mailer: LoginNotificationRobot/2";
