@@ -32,7 +32,7 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
     {
         return [
             'title'     => 'Session Login Alarm',
-            'version'   => '2.0.5',
+            'version'   => '2.0.6',
             'summary'   => __('Handles sending of login attempt/success emails to users.'),
             'permanent' => false,
             'singular'  => true,
@@ -437,7 +437,9 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->attr('name', 'sla_from_name');
         $f->attr('value', $data['sla_from_name']);
         $f->label = __("The name (not email address) the message should come from.");
+        $f->required = true;
         $from->add($f);
+
 
         if (empty($data['sla_from_address'])) {
             $data['sla_from_address'] = "login.notifier@" . wire('config')->httpHost;
@@ -446,6 +448,26 @@ class SessionLoginAlarm extends WireData implements Module, ConfigurableModule
         $f->attr('name', 'sla_from_address');
         $f->attr('value', $data['sla_from_address']);
         $f->label = __("The email address (not name) the message should come from.");
+        $wiremail_modules = [
+            'WireMailSmtp'       => 'smtp_user',
+            'AmazonSESMailer'    => 'defaultFromMail',
+            'WireMailMailgun'    => 'fromEmail',
+            'WireMaiSwiftMailer' => 'SMTPUsername',
+        ];
+        $suggested = [];
+        foreach ($wiremail_modules as $wm => $setting) {
+            if ($m->isInstalled($wm)) {
+                $wmcf = $m->getConfig($wm);
+                $wmcf = @$wmcf[$setting];
+                if (!empty($wmcf)) {
+                    $suggested[] = "$wmcf (from $wm)";
+                }
+            }
+        }
+        if (!empty($suggested)) {
+            $f->notes = "Suggested email send addresses: " . implode(", ", $suggested);
+        }
+        $f->required = true;
         $from->add($f);
 
         $f = $m->get("InputfieldEmail");
